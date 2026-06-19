@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced Product Sentiment Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+<div class="container">
+
+  <header class="topbar">
+    <h1>AI Product Review & Recommendation System</h1>
+  </header>
+
+  <!-- ================= FORM ================= -->
+
+  <form method="POST" enctype="multipart/form-data" class="card">
+
+    <h2>1️⃣ Text Sentiment Analysis</h2>
+
+    <div class="row">
+      <label>Choose Language</label>
+      <select name="language">
+        <option value="en">English</option>
+        <option value="hi">Hindi</option>
+        <option value="te">Telugu</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label>Enter Feedback</label>
+      <textarea name="text" rows="4" placeholder="Type your feedback..."></textarea>
+    </div>
+
+    <button type="submit" class="primary">Analyze Text</button>
+
+    <hr style="margin:30px 0;">
+
+    <!-- ================= PRODUCT ================= -->
+    <h2>2️⃣ Website Product Analysis</h2>
+
+    <div class="row">
+      <label>Select Website</label>
+      <select name="website">
+        <option value="flipkart">Flipkart</option>
+        <option value="amazon">Amazon</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label>Product URL</label>
+      <input type="url" name="url" placeholder="Enter product URL">
+    </div>
+
+    <button type="submit" class="go">Analyze Product</button>
+
+    <hr style="margin:30px 0;">
+
+    <!-- ================= IMAGE ================= -->
+    <h2>3️⃣ Upload Product Image (AI Recommendation)</h2>
+
+    <div class="row">
+      <label>Upload Product Image</label>
+      <input type="file" name="product_image" accept="image/*">
+    </div>
+
+    <button type="submit" class="primary">Upload & Analyze</button>
+
+  </form>
+
+  <!-- ================= ENGLISH RESULT ================= -->
+
+  {% if text_result %}
+  <section class="card">
+    <h2 class="center">Text Sentiment Result</h2>
+
+    <div class="center biglabel {{ text_result.label|lower }}">
+      {{ text_result.label }}
+    </div>
+
+    <table class="scores">
+      <tr><th>Metric</th><th>Score</th></tr>
+      <tr><td>Positive</td><td>{{ '%.3f'|format(text_result.scores['pos']) }}</td></tr>
+      <tr><td>Neutral</td><td>{{ '%.3f'|format(text_result.scores['neu']) }}</td></tr>
+      <tr><td>Negative</td><td>{{ '%.3f'|format(text_result.scores['neg']) }}</td></tr>
+      <tr><td>Compound</td><td>{{ '%.6f'|format(text_result.scores['compound']) }}</td></tr>
+    </table>
+
+    <div class="center">
+      <img class="emoji" src="{{ url_for('static', filename=text_result.image) }}">
+      <audio controls src="{{ url_for('static', filename=text_result.audio) }}"></audio>
+    </div>
+
+    {% if chart_data %}
+    <canvas id="textChart"></canvas>
+    <script>
+      const textData = {{ chart_data|tojson }};
+      new Chart(document.getElementById('textChart'), {
+        type: 'bar',
+        data: {
+          labels: textData.labels,
+          datasets: [{
+            data: textData.values,
+            backgroundColor:['#27ae60','#f39c12','#c0392b','#8e44ad']
+          }]
+        },
+        options:{scales:{y:{beginAtZero:true,suggestedMax:1}}}
+      });
+    </script>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <!-- ================= MULTILINGUAL RESULT ================= -->
+
+  {% if multi_result %}
+  <section class="card">
+    <h2 class="center">Multilingual Sentiment Result</h2>
+
+    <div class="center biglabel {{ multi_result.label|lower }}">
+      {{ multi_result.label }}
+    </div>
+
+    <p><b>Original:</b> {{ multi_result.original }}</p>
+    <p><b>Translated:</b> {{ multi_result.translated }}</p>
+    <p><b>Confidence:</b> {{ '%.3f'|format(multi_result.confidence) }}</p>
+
+    <div class="center">
+      <img class="emoji" src="{{ url_for('static', filename=multi_result.image) }}">
+      <audio controls src="{{ url_for('static', filename=multi_result.audio) }}"></audio>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- ================= PRODUCT RESULT (UPDATED ONLY THIS) ================= -->
+
+  {% if product %}
+  <section class="card">
+    <h2 class="center">Product Analysis Result</h2>
+
+    <h3 class="center">{{ product.title }}</h3>
+
+    {% if product.rating %}
+    <p class="center"><b>Rating:</b> ⭐ {{ product.rating }}/5</p>
+    {% endif %}
+
+    <!-- ✅ OVERALL RESULT -->
+    {% if overall_result %}
+    <div class="center overall-box {{ overall_result.label|lower }}">
+      <h2>{{ overall_result.label }}</h2>
+      <p>{{ overall_result.decision }}</p>
+    </div>
+    {% endif %}
+
+    <!-- IMAGES -->
+    {% if product.images %}
+    <div class="image-scroll">
+      {% for img in product.images %}
+      <img src="{{ img }}" class="product-img">
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- REVIEWS -->
+    {% if analyzed_reviews %}
+    <h3>Customer Reviews</h3>
+    <ul class="reviews">
+      {% for r in analyzed_reviews %}
+      <li class="review-card">
+        <span class="badge {{ r.label|lower }}">
+          {% if r.label == "Positive" %}
+            😊 Positive
+          {% elif r.label == "Negative" %}
+            😡 Negative
+          {% else %}
+            😐 Neutral
+          {% endif %}
+        </span>
+        <p>{{ r.text }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <!-- ================= IMAGE RESULT ================= -->
+
+  {% if image_result %}
+  <section class="card">
+    <h2 class="center">AI Image-Based Recommendation</h2>
+
+    <div class="biglabel positive">
+      Detected: {{ image_result.label }}
+    </div>
+
+    <p>Confidence: {{ '%.2f'|format(image_result.confidence) }}</p>
+  </section>
+  {% endif %}
+
+  <!-- ================= RECOMMENDED PRODUCTS ================= -->
+
+  {% if product_links %}
+  <section class="card">
+    <h2 class="center">Recommended Products</h2>
+
+    <ul>
+      {% for item in product_links %}
+        <li style="margin:10px 0;">
+          <a href="{{ item.link }}" target="_blank">
+            {{ item.title }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <footer>
+    Flask · VADER · Selenium · Multi-Language · Multi-Website · Image AI
+  </footer>
+
+</div>
+</body>
+</html>

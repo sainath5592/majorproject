@@ -1,0 +1,11 @@
+flask
+vaderSentiment
+beautifulsoup4
+selenium
+webdriver-manager
+transformers
+torch
+langdetect
+googletrans==4.0.0-rc1
+pillow
+pyttsx3
